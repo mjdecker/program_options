@@ -13,7 +13,6 @@
 #include <boost/function/function1.hpp>
 #include <boost/lexical_cast.hpp>
 
-
 #include <string>
 #include <vector>
 #include <typeinfo>
@@ -163,6 +162,7 @@ namespace boost { namespace program_options {
         bool m_zero_tokens;
     };
 
+#ifndef BOOST_NO_RTTI
     /** Base class for all option that have a fixed type, and are
         willing to announce this type to the outside world.
         Any 'value_semantics' for which you want to find out the
@@ -179,20 +179,23 @@ namespace boost { namespace program_options {
         // class is silly, but just in case.
         virtual ~typed_value_base() {}
     };
+#endif
 
 
     /** Class which handles value of a specific type. */
     template<class T, class charT = char>
-    class typed_value : public value_semantic_codecvt_helper<charT>,
-                        public typed_value_base
+    class typed_value : public value_semantic_codecvt_helper<charT>
+#ifndef BOOST_NO_RTTI
+                      , public typed_value_base
+#endif
     {
     public:
         /** Ctor. The 'store_to' parameter tells where to store
             the value when it's known. The parameter can be NULL. */
         typed_value(T* store_to) 
         : m_store_to(store_to), m_composing(false),
-          m_multitoken(false), m_zero_tokens(false),
-          m_required(false)
+          m_implicit(false), m_multitoken(false),
+          m_zero_tokens(false), m_required(false)
         {} 
 
         /** Specifies default value, which will be used
@@ -320,7 +323,7 @@ namespace boost { namespace program_options {
 
         unsigned max_tokens() const {
             if (m_multitoken) {
-                return std::numeric_limits<unsigned>::max();
+                return std::numeric_limits<unsigned>::max BOOST_PREVENT_MACRO_SUBSTITUTION();
             } else if (m_zero_tokens) {
                 return 0;
             } else {
@@ -359,10 +362,12 @@ namespace boost { namespace program_options {
 
     public: // typed_value_base overrides
         
+#ifndef BOOST_NO_RTTI
         const std::type_info& value_type() const
         {
             return typeid(T);
         }
+#endif
         
 
     private:
